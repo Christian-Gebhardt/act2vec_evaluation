@@ -70,7 +70,7 @@ def traces_to_one_hot(traces, vocab):
     return encoded_traces
 
 
-def prepare_sequences(vect_traces, window_length):
+def compute_sequences(vect_traces, window_length):
     # Create input-output pairs
     X = []
     y = []
@@ -81,7 +81,50 @@ def prepare_sequences(vect_traces, window_length):
     return np.array(X), np.array(y)
 
 
-def prepare_data(traces, act2vec_dict, window_sizes, dataset_name='', print_summary=True, save_to_file=True):
+def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=True):
+    # read xes data
+    print('Reading xes data...')
+    df = xes_to_csv('data/event_logs/helpdesk.xes')
+
+    # extract the traces from the data
+    print('Extracting traces...')
+    traces = extract_traces(df)
+
+    if print_summary or summary_to_file:
+        num_events = len(df)
+        num_activities = len(df["concept:name"].unique())
+        num_traces = len(traces)
+        avg_trace_len = sum([len(t) for t in traces]) / num_traces
+        min_trace_len = min([len(t) for t in traces])
+        max_trace_len = max([len(t) for t in traces])
+
+        if print_summary:
+            print('*' * 120)
+            print('Data Preparation Summary {0}:\n'.format(dataset_name))
+            print('*' * 120)
+            print('Number of traces: {0}'.format(num_traces))
+            print('Average trace length: {:.2f}'.format(avg_trace_len))
+            print('Minimum trace length: {0}'.format(min_trace_len))
+            print('Maximum trace length: {0}'.format(max_trace_len))
+            print('Number of activities: {0}'.format(num_activities))
+            print('Overall number of activities: {0}'.format(num_events))
+
+        if summary_to_file:
+            with open('data_preparation_summary_{0}.txt'.format(dataset_name), 'w') as f:
+                f.write('*' * 120)
+                f.write('\nData Preparation Summary {0}:\n'.format(dataset_name))
+                f.write('*' * 120)
+                f.write('Number of traces: {0}\n'.format(num_traces))
+                f.write('Average trace length: {0}\n'.format(avg_trace_len))
+                f.write('Minimum trace length: {0}\n'.format(min_trace_len))
+                f.write('Maximum trace length: {0}\n'.format(max_trace_len))
+                f.write('Number of activities: {0}\n'.format(num_activities))
+                f.write('Overall number of activities: {0}\n'.format(num_events))
+
+    return traces
+
+
+def prepare_data(traces, act2vec_dict, window_sizes, dataset_name='', print_summary=True, summary_to_file=True):
     # prepare data to be in appropriate input format for NN
 
     # OH: access with window_size
@@ -100,7 +143,7 @@ def prepare_data(traces, act2vec_dict, window_sizes, dataset_name='', print_summ
 
         for window_size in window_sizes:
             traces_wv = traces_to_embedding_indices(traces, vocab)
-            X_wv, y_wv = prepare_sequences(traces_wv, window_size)
+            X_wv, y_wv = compute_sequences(traces_wv, window_size)
             # one hot encoding for labels
             y_wv = tf.one_hot(y_wv, depth=len(vocab)).numpy()
 
@@ -113,7 +156,7 @@ def prepare_data(traces, act2vec_dict, window_sizes, dataset_name='', print_summ
     vocab_oh = get_vocabulary(traces)
     for window_size in window_sizes:
         traces_oh = traces_to_one_hot(traces, vocab_oh)
-        X_oh, y_oh = prepare_sequences(traces_oh, window_size)
+        X_oh, y_oh = compute_sequences(traces_oh, window_size)
 
         data['OH'][window_size] = {
             'X': X_oh,
@@ -129,7 +172,7 @@ def prepare_data(traces, act2vec_dict, window_sizes, dataset_name='', print_summ
             X_oh, y_oh = data['OH'][window_size]['X'], data['OH'][window_size]['y']
             print('OH, window_size {0}: X-shape: {1}, y-shape: {2}'.format(window_size, X_oh.shape, y_oh.shape))
 
-    if save_to_file:
+    if summary_to_file:
         with open('data_preparation_summary_{0}.txt'.format(dataset_name), 'w') as f:
             f.write('*' * 120)
             f.write('\nData Preparation Summary {0}:\n'.format(dataset_name))
