@@ -26,17 +26,18 @@ def evaluate(model_names, model_params_list, training_params_list, data, kfold_o
 
             # models with WV input
             if model_name in ['LSTM_WV', 'FNN_WV']:
-                for act2vec_technique, params in model_params_list['WV']:
-                    key = (act2vec_technique, params['window_size'])
-                    X_wv = data['WV'][key]['X']
-                    y_wv = data['WV'][key]['y']
-                    evaluate_model(model_name, params, X_wv, y_wv, kf, training_params=training_params,
-                                   act2vec_technique_name=act2vec_technique, print_to_console=print_to_console,
-                                   save_to_file=save_to_file)
+                for act2vec_technique, params_list in model_params_list['WV'].items():
+                    for params in params_list:
+                        key = (act2vec_technique, params['window_length'])
+                        X_wv = data['WV'][key]['X']
+                        y_wv = data['WV'][key]['y']
+                        evaluate_model(model_name, params, X_wv, y_wv, kf, training_params=training_params,
+                                       act2vec_technique_name=act2vec_technique, print_to_console=print_to_console,
+                                       save_to_file=save_to_file)
             # models with OH input
             elif model_name in ['LSTM_OH', 'FNN_OH']:
                 for params in model_params_list['OH']:
-                    key = params['window_size']
+                    key = params['window_length']
                     X_oh = data['OH'][key]['X']
                     y_oh = data['OH'][key]['y']
                     evaluate_model(model_name, params, X_oh, y_oh, kf, training_params=training_params,
@@ -91,14 +92,13 @@ def evaluate_model(model_name, model_params, X, y, kfold, training_params=None, 
         # Format the current date and time as "dd-mm-yy_hh:mm"
         formatted_time = current_time.strftime("%d-%m-%y_%H:%M")
 
-        results_dir = "./res_{0}".format(formatted_time)
+        results_dir = "./output/evaluation/res_{0}".format(formatted_time)
 
         # Create the directory if they do not exist already
         os.makedirs(results_dir, exist_ok=True)
 
         filename = os.path.join(results_dir, "{0}_EPOCHS{1}_WINDOW{2}".format(model_name, training_params['epochs'],
                                                                               model_params['window_length']))
-
         if 'WV' in model_name:
             if act2vec_technique_name:
                 filename += "_{0}".format(act2vec_technique_name)

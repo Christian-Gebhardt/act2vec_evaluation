@@ -1,34 +1,40 @@
-from eval.evaluation import evaluate, plot_embeddings_tsne, compute_similarity_matrix, get_top_similarities
-from util.compute_embeddings import compute_embeddings
-from util.preprocessing import xes_to_csv, extract_traces, prepare_data, get_inv_vocabulary, add_padding
-from word_embedding_models.act2vec_cbow import act2vec_cbow
-from word_embedding_models.act2vec_random import act2vec_random
+import os
+
+import numpy as np
+
+from eval.evaluation import evaluate
+from util import prepare_evaluation
+from util.prepare_evaluation import prepare_data_and_params
+from util.preprocessing import prepare_data, add_padding, preprocess_dataset
 from word_embedding_models.act2vec_sgns import act2vec_sgns
-from word_embedding_models.act2vec_svd import act2vec_svd
-import random
 
 if __name__ == '__main__':
-    # read xes data
-    print('Reading xes data...')
-    df = xes_to_csv('data/event_logs/helpdesk.xes')
 
-    # extract the traces from the data
-    print('Extracting traces...')
-    traces = extract_traces(df[:10000])
+    dataset_name = 'helpdesk'
+
+    traces = []
+
+    # load preprocessed traces if npy file exists
+    if os.path.exists('./data/preprocessed/dataset_{0}_traces.npy'.format(dataset_name)):
+        traces = np.load('./data/preprocessed/dataset_{0}_traces.npy'.format(dataset_name), allow_pickle=True)
+    else:
+        traces = preprocess_dataset(dataset_name)
 
     # define hyperparams for embeddings
-    window_size = 5
-    embedding_dim = 128
+    window_sizes = [5]
+    embedding_dims = [128]
     act2vec_techniques = ['SGNS']
 
-    # add padding to traces (to predict activities at the beginning with index < window_size and prefix >= 1)
-    traces = add_padding(traces, window_size)
+    # define training params
+    epoch_nums = [3]
+    batch_sizes = [64]
 
-    # computing activity embeddings
-    print('Computing activity embeddings..')
+    evaluation_data, model_params, training_params = prepare_data_and_params(
+        act2vec_techniques, traces, dataset_name, embedding_dims, window_sizes,
+        epoch_nums, batch_sizes)
 
-    # access act_vectors dict with tuple (technique, embedding_dim, window_size) to get tuple (vectors, vocab)
-    act_vectors, vocab = act2vec_sgns(traces, embedding_dim, window_size)
+    # define models to evaluate and their hyperparams
+    model_names = ['FNN_WV', 'FNN_OH', 'LSTM_WV', 'LSTM_OH']
 
     """
     print('Plotting embeddings as TSNE and showing some similarities...')
@@ -50,28 +56,6 @@ if __name__ == '__main__':
         
     """
 
-    # prepare data for NN input
-    print('Preparing data...')
-    data = prepare_data(traces[:100], vocab, window_size)
-
-    # define models to evaluate and their hyperparams
-    model_names = ['FNN_WV', 'FNN_OH', 'LSTM_WV', 'LSTM_OH']
-
-    model_params = {
-        'LSTM_WV': [{'layer_size': (32, 32), 'vocab_size': len(vocab), 'embedding_dim': embedding_dim,
-                     'word_vectors': act_vectors, 'window_length': window_size}],
-        'LSTM_OH': [{'layer_size': (32, 32), 'vocab_size': len(vocab), 'window_length': window_size}],
-        'FNN_WV': [{'layer_size': (32, 32), 'vocab_size': len(vocab), 'embedding_dim': embedding_dim,
-                    'word_vectors': act_vectors, 'window_length': window_size}],
-        'FNN_OH': [{'layer_size': (32, 32), 'vocab_size': len(vocab), 'window_length': window_size}]
-    }
-    # define training params
-    training_params = [{
-        'epochs': 10,
-        'batch_size': 256,
-        'verbose': 0
-    }]
-
     # evaluate the models
     print('Evaluating models...')
-    evaluate(model_names, model_params, training_params, data, save_to_file=False)
+    evaluate(model_names, model_params, training_params, evaluation_data, save_to_file=True)

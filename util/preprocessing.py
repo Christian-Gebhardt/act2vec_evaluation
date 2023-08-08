@@ -81,10 +81,10 @@ def compute_sequences(vect_traces, window_length):
     return np.array(X), np.array(y)
 
 
-def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=True):
+def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=True, save_to_file=True):
     # read xes data
     print('Reading xes data...')
-    df = xes_to_csv('data/event_logs/helpdesk.xes')
+    df = xes_to_csv('data/event_logs/{0}.xes'.format(dataset_name))
 
     # extract the traces from the data
     print('Extracting traces...')
@@ -100,7 +100,7 @@ def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=True):
 
         if print_summary:
             print('*' * 120)
-            print('Data Preparation Summary {0}:\n'.format(dataset_name))
+            print('Dataset Summary {0}:'.format(dataset_name))
             print('*' * 120)
             print('Number of traces: {0}'.format(num_traces))
             print('Average trace length: {:.2f}'.format(avg_trace_len))
@@ -108,11 +108,12 @@ def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=True):
             print('Maximum trace length: {0}'.format(max_trace_len))
             print('Number of activities: {0}'.format(num_activities))
             print('Overall number of activities: {0}'.format(num_events))
+            print('*' * 120)
 
         if summary_to_file:
-            with open('data_preparation_summary_{0}.txt'.format(dataset_name), 'w') as f:
-                f.write('*' * 120)
-                f.write('\nData Preparation Summary {0}:\n'.format(dataset_name))
+            with open('./output/preprocessing/dataset_summary_{0}.txt'.format(dataset_name), 'w') as f:
+                f.write('*' * 120 + '\n')
+                f.write('Dataset Summary {0}:\n'.format(dataset_name))
                 f.write('*' * 120)
                 f.write('Number of traces: {0}\n'.format(num_traces))
                 f.write('Average trace length: {0}\n'.format(avg_trace_len))
@@ -120,11 +121,14 @@ def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=True):
                 f.write('Maximum trace length: {0}\n'.format(max_trace_len))
                 f.write('Number of activities: {0}\n'.format(num_activities))
                 f.write('Overall number of activities: {0}\n'.format(num_events))
+                f.write('*' * 120)
 
+    if save_to_file:
+        np.save('./data/preprocessed/dataset_{0}_traces.npy'.format(dataset_name), traces)
     return traces
 
 
-def prepare_data(traces, act2vec_dict, window_sizes, dataset_name='', print_summary=True, summary_to_file=True):
+def prepare_data(padded_traces, act2vec_dict, window_sizes, dataset_name='', print_summary=True, summary_to_file=True):
     # prepare data to be in appropriate input format for NN
 
     # OH: access with window_size
@@ -142,7 +146,7 @@ def prepare_data(traces, act2vec_dict, window_sizes, dataset_name='', print_summ
         _, vocab = value
 
         for window_size in window_sizes:
-            traces_wv = traces_to_embedding_indices(traces, vocab)
+            traces_wv = traces_to_embedding_indices(padded_traces[window_size], vocab)
             X_wv, y_wv = compute_sequences(traces_wv, window_size)
             # one hot encoding for labels
             y_wv = tf.one_hot(y_wv, depth=len(vocab)).numpy()
@@ -153,9 +157,9 @@ def prepare_data(traces, act2vec_dict, window_sizes, dataset_name='', print_summ
             }
 
     # one-hot encoding
-    vocab_oh = get_vocabulary(traces)
+    vocab_oh = get_vocabulary(padded_traces[window_sizes[0]])
     for window_size in window_sizes:
-        traces_oh = traces_to_one_hot(traces, vocab_oh)
+        traces_oh = traces_to_one_hot(padded_traces[window_size], vocab_oh)
         X_oh, y_oh = compute_sequences(traces_oh, window_size)
 
         data['OH'][window_size] = {
@@ -165,22 +169,24 @@ def prepare_data(traces, act2vec_dict, window_sizes, dataset_name='', print_summ
 
     if print_summary:
         print('*' * 120)
-        print('Data Preparation Summary {0}:'.format(dataset_name))
+        print('Input Preparation Summary {0}:'.format(dataset_name))
         print('*' * 120)
         for window_size in window_sizes:
             # does not matter since all are the same for same window size
             X_oh, y_oh = data['OH'][window_size]['X'], data['OH'][window_size]['y']
             print('OH, window_size {0}: X-shape: {1}, y-shape: {2}'.format(window_size, X_oh.shape, y_oh.shape))
+        print('*' * 120)
 
     if summary_to_file:
-        with open('data_preparation_summary_{0}.txt'.format(dataset_name), 'w') as f:
-            f.write('*' * 120)
-            f.write('\nData Preparation Summary {0}:\n'.format(dataset_name))
-            f.write('*' * 120)
+        with open('./output/preprocessing/input_preparation_summary_{0}.txt'.format(dataset_name), 'w') as f:
+            f.write('*' * 120 + '\n')
+            f.write('Data Preparation Summary {0}:\n'.format(dataset_name))
+            f.write('*' * 120 + '\n')
             for window_size in window_sizes:
                 # does not matter since all are the same for same window size
                 X_oh, y_oh = data['OH'][window_size]['X'], data['OH'][window_size]['y']
                 f.write('OH, window_size {0}: X-shape: {1}, y-shape: {2}\n'.format(window_size, X_oh.shape, y_oh.shape))
+            f.write('*' * 120)
 
     return data
 
