@@ -6,18 +6,18 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
-from sklearn.model_selection import KFold
+from sklearn.model_selection import RepeatedKFold
 from util.model_builder import build_model
 
 
 def evaluate(model_names, dataset_name, model_params_list, training_params_list, data, kfold_opt=None,
-             print_to_console=True, save_to_file=True):
-    # prepare k-fold cross validation
+             print_to_console=True, save_to_file=False):
+    # prepare k-fold cross validation (5x2 CV for McNemars Test)
     if kfold_opt is None:
-        kfold_opt = {'n_splits': 5, 'shuffle': True}
+        kfold_opt = {'n_splits': 2, 'n_repeats': 5, 'random_state': 729504}
 
     # use the same k-fold split for every model for fair comparison
-    kf = KFold(**kfold_opt)
+    kf = RepeatedKFold(**kfold_opt)
 
     # loop over all selected models
     for model_name in model_names:
@@ -49,7 +49,7 @@ def evaluate(model_names, dataset_name, model_params_list, training_params_list,
 
 def evaluate_model(model_name, dataset_name, model_params, X, y, kfold, training_params=None, act2vec_technique_name='',
                    print_to_console=True,
-                   save_to_file=True):
+                   save_to_file=False):
     results = []
     training_times = []
 
@@ -85,7 +85,7 @@ def evaluate_model(model_name, dataset_name, model_params, X, y, kfold, training
 
         if save_to_file:
             # Predict probabilities and labels for the test data
-            predicted_probabilities = model.predict(X_test)
+            predicted_probabilities = model.predict(X_test, verbose=0)
             predicted_labels = np.argmax(predicted_probabilities, axis=-1)
 
             # Store data for this k-fold in the dictionary

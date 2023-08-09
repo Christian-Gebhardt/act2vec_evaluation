@@ -83,7 +83,7 @@ def compute_sequences(vect_traces, window_length):
     return np.array(X), np.array(y)
 
 
-def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=True, save_to_file=True):
+def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=False, save_to_file=True):
     # read xes data
     print('Reading xes data...')
     df = xes_to_csv('data/event_logs/{0}.xes'.format(dataset_name))
@@ -118,7 +118,7 @@ def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=True, s
                 f.write('Dataset Summary {0}:\n'.format(dataset_name))
                 f.write('*' * 120 + '\n')
                 f.write('Number of traces: {0}\n'.format(num_traces))
-                f.write('Average trace length: {0}\n'.format(avg_trace_len))
+                f.write('Average trace length: {:.2f}\n'.format(avg_trace_len))
                 f.write('Minimum trace length: {0}\n'.format(min_trace_len))
                 f.write('Maximum trace length: {0}\n'.format(max_trace_len))
                 f.write('Number of activities: {0}\n'.format(num_activities))

@@ -18,7 +18,7 @@ if __name__ == '__main__':
     if os.path.exists('./data/preprocessed/dataset_{0}_traces.npy'.format(dataset_name)):
         traces = np.load('./data/preprocessed/dataset_{0}_traces.npy'.format(dataset_name), allow_pickle=True)
     else:
-        traces = preprocess_dataset(dataset_name)
+        traces = preprocess_dataset(dataset_name, summary_to_file=True)
 
     # define hyperparams for embeddings
     window_sizes = [5]
@@ -26,11 +26,11 @@ if __name__ == '__main__':
     act2vec_techniques = ['SGNS']
 
     # define training params
-    epoch_nums = [3]
+    epoch_nums = [10]
     batch_sizes = [64]
 
     evaluation_data, model_params, training_params = prepare_data_and_params(
-        act2vec_techniques, traces[:50], dataset_name, embedding_dims, window_sizes,
+        act2vec_techniques, traces[:200], dataset_name, embedding_dims, window_sizes,
         epoch_nums, batch_sizes)
 
     # define models to evaluate and their hyperparams
@@ -58,4 +58,4 @@ if __name__ == '__main__':
 
     # evaluate the models
     print('Evaluating models...')
-    evaluate(model_names, dataset_name, model_params, training_params, evaluation_data, save_to_file=True)
+    evaluate(model_names, dataset_name, model_params, training_params, evaluation_data, save_to_file=False)
