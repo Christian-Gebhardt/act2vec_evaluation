@@ -36,7 +36,7 @@ def prepare_data_and_params(act2vec_techniques, traces, dataset_name, embedding_
                     'vocab_size': len(vocab),
                     'embedding_dim': embedding_dim,
                     'word_vectors': vectors,
-                    'window_length': window_size
+                    'window_size': window_size
                 })
 
     # prepare OH params
@@ -45,7 +45,7 @@ def prepare_data_and_params(act2vec_techniques, traces, dataset_name, embedding_
         model_params['OH'].append({
             'layer_size': (32, 32),
             'vocab_size': vocab_size,
-            'window_length': window_size
+            'window_size': window_size
         })
 
     # prepare training params
@@ -53,7 +53,8 @@ def prepare_data_and_params(act2vec_techniques, traces, dataset_name, embedding_
         for batch_size in batch_sizes:
             training_params.append({
                 'epochs': epoch_num,
-                'batch_size': batch_size
+                'batch_size': batch_size,
+                'verbose': 0
             })
 
     return evaluation_data, model_params, training_params

@@ -1,3 +1,5 @@
+import os
+
 import pm4py
 import tensorflow as tf
 import numpy as np
@@ -114,7 +116,7 @@ def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=True, s
             with open('./output/preprocessing/dataset_summary_{0}.txt'.format(dataset_name), 'w') as f:
                 f.write('*' * 120 + '\n')
                 f.write('Dataset Summary {0}:\n'.format(dataset_name))
-                f.write('*' * 120)
+                f.write('*' * 120 + '\n')
                 f.write('Number of traces: {0}\n'.format(num_traces))
                 f.write('Average trace length: {0}\n'.format(avg_trace_len))
                 f.write('Minimum trace length: {0}\n'.format(min_trace_len))
@@ -178,6 +180,9 @@ def prepare_data(padded_traces, act2vec_dict, window_sizes, dataset_name='', pri
         print('*' * 120)
 
     if summary_to_file:
+        # Create the directory if it does not exist already
+        os.makedirs('./output/preprocessing', exist_ok=True)
+
         with open('./output/preprocessing/input_preparation_summary_{0}.txt'.format(dataset_name), 'w') as f:
             f.write('*' * 120 + '\n')
             f.write('Data Preparation Summary {0}:\n'.format(dataset_name))

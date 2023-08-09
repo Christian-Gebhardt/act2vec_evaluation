@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     # define hyperparams for embeddings
     window_sizes = [5]
-    embedding_dims = [128]
+    embedding_dims = [64]
     act2vec_techniques = ['SGNS']
 
     # define training params
@@ -30,11 +30,11 @@ if __name__ == '__main__':
     batch_sizes = [64]
 
     evaluation_data, model_params, training_params = prepare_data_and_params(
-        act2vec_techniques, traces, dataset_name, embedding_dims, window_sizes,
+        act2vec_techniques, traces[:50], dataset_name, embedding_dims, window_sizes,
         epoch_nums, batch_sizes)
 
     # define models to evaluate and their hyperparams
-    model_names = ['FNN_WV', 'FNN_OH', 'LSTM_WV', 'LSTM_OH']
+    model_names = ['FNN_WV', 'FNN_OH']
 
     """
     print('Plotting embeddings as TSNE and showing some similarities...')
@@ -58,4 +58,4 @@ if __name__ == '__main__':
 
     # evaluate the models
     print('Evaluating models...')
-    evaluate(model_names, model_params, training_params, evaluation_data, save_to_file=True)
+    evaluate(model_names, dataset_name, model_params, training_params, evaluation_data, save_to_file=True)

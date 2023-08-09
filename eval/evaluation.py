@@ -10,7 +10,7 @@ from sklearn.model_selection import KFold
 from util.model_builder import build_model
 
 
-def evaluate(model_names, model_params_list, training_params_list, data, kfold_opt=None,
+def evaluate(model_names, dataset_name, model_params_list, training_params_list, data, kfold_opt=None,
              print_to_console=True, save_to_file=True):
     # prepare k-fold cross validation
     if kfold_opt is None:
@@ -28,29 +28,33 @@ def evaluate(model_names, model_params_list, training_params_list, data, kfold_o
             if model_name in ['LSTM_WV', 'FNN_WV']:
                 for act2vec_technique, params_list in model_params_list['WV'].items():
                     for params in params_list:
-                        key = (act2vec_technique, params['window_length'])
+                        key = (act2vec_technique, params['window_size'])
                         X_wv = data['WV'][key]['X']
                         y_wv = data['WV'][key]['y']
-                        evaluate_model(model_name, params, X_wv, y_wv, kf, training_params=training_params,
+                        evaluate_model(model_name, dataset_name, params, X_wv, y_wv, kf,
+                                       training_params=training_params,
                                        act2vec_technique_name=act2vec_technique, print_to_console=print_to_console,
                                        save_to_file=save_to_file)
             # models with OH input
             elif model_name in ['LSTM_OH', 'FNN_OH']:
                 for params in model_params_list['OH']:
-                    key = params['window_length']
+                    key = params['window_size']
                     X_oh = data['OH'][key]['X']
                     y_oh = data['OH'][key]['y']
-                    evaluate_model(model_name, params, X_oh, y_oh, kf, training_params=training_params,
+                    evaluate_model(model_name, dataset_name, params, X_oh, y_oh, kf, training_params=training_params,
                                    print_to_console=print_to_console, save_to_file=save_to_file)
             else:
                 raise ValueError('Model name {0} not found.'.format(model_name))
 
 
-def evaluate_model(model_name, model_params, X, y, kfold, training_params=None, act2vec_technique_name='',
+def evaluate_model(model_name, dataset_name, model_params, X, y, kfold, training_params=None, act2vec_technique_name='',
                    print_to_console=True,
                    save_to_file=True):
     results = []
     training_times = []
+
+    # Initialize a dictionary to store predictions for all k-folds
+    kfold_predictions = {}
 
     # Iterate over the generated k_folds.
     for i, (train_index, test_index) in enumerate(kfold.split(X)):
@@ -79,32 +83,66 @@ def evaluate_model(model_name, model_params, X, y, kfold, training_params=None, 
         # evaluate the model on the test data
         results.append(model.evaluate(X_test, y_test, verbose=0))
 
+        if save_to_file:
+            # Predict probabilities and labels for the test data
+            predicted_probabilities = model.predict(X_test)
+            predicted_labels = np.argmax(predicted_probabilities, axis=-1)
+
+            # Store data for this k-fold in the dictionary
+            kfold_predictions[f'kfold_{i + 1}'] = {
+                "predicted_probabilities": predicted_probabilities,
+                "predicted_labels": predicted_labels,
+                "true_labels": y_test
+            }
+
+    # Get the current date and time
+    current_time = datetime.datetime.now()
+
+    # Format the current date and time as "dd-mm-yy_hh:mm"
+    formatted_time = current_time.strftime("%d-%m-%y_%H:%M")
+
+    header = {
+        'model_name': model_name,
+        'dataset': dataset_name.upper(),
+        'time': formatted_time,
+        'epochs': training_params['epochs'],
+        'batch_size': training_params['batch_size'],
+        'window_size': model_params['window_size']
+    }
+
+    if 'WV' in model_name:
+        header['technique'] = act2vec_technique_name
+        header['embedding_dim'] = model_params['embedding_dim']
+
     # print the results to console
     if print_to_console:
-        print_results(model_name, results, training_times)
+        print_results(model_name, header, results, training_times)
 
     # save the results as csv (pandas df)
 
     if save_to_file:
-        # Get the current date and time
-        current_time = datetime.datetime.now()
+        results_dir = './output/evaluation/'
+        pred_dir = './output/prediction/'
 
-        # Format the current date and time as "dd-mm-yy_hh:mm"
-        formatted_time = current_time.strftime("%d-%m-%y_%H:%M")
-
-        results_dir = "./output/evaluation/res_{0}".format(formatted_time)
-
-        # Create the directory if they do not exist already
+        # Create the directory if it does not exist already
         os.makedirs(results_dir, exist_ok=True)
 
-        filename = os.path.join(results_dir, "{0}_EPOCHS{1}_WINDOW{2}".format(model_name, training_params['epochs'],
-                                                                              model_params['window_length']))
+        setup_name = '{0}_{1}_{2}_EP{3}B{4}_WIN{5}'.format(
+            model_name, dataset_name.upper(), formatted_time, training_params['epochs'],
+            training_params['batch_size'], model_params['window_size'])
+
         if 'WV' in model_name:
             if act2vec_technique_name:
-                filename += "_{0}".format(act2vec_technique_name)
-            filename += "_DIM{0}".format(model_params['embedding_dim'])
+                setup_name += "_{0}".format(act2vec_technique_name)
+            setup_name += "_DIM{0}".format(model_params['embedding_dim'])
 
-        save_results_to_csv(model_name, results, training_times, filename)
+        # save the k-fold predictions to a .npy file
+        filename_npy = os.path.join(pred_dir, setup_name) + '.npy'
+        np.save(filename_npy, kfold_predictions)
+
+        # save the results to .csv file
+        filename_csv = os.path.join(results_dir, setup_name)
+        save_results_to_csv(model_name, results, training_times, filename_csv)
 
 
 def plot_embeddings_tsne(act_vectors, vocab, tsne_options=None, title=''):
@@ -163,22 +201,28 @@ def get_top_similarities(similarity_matrix, target_vector_index, n):
     return zip(top_n_indices, top_n_similarities)
 
 
-def print_results(model_name, results, training_times):
+def print_results(model_name, header, results, training_times):
     sum_metrics = [0] * (len(results[0]) - 1)  # Initialize a list to store the sum of metrics
     print('*' * 120)
     for i in range(len(results)):
-        print("{} => k-fold {}: accuracy: {:.4f}, precision: {:.4f}, recall: {:.4f}, top-3-accuracy: {:.4f} "
-              "training_time: {:.4f}".format(model_name, i + 1, results[i][1], results[i][2], results[i][3],
-                                             results[i][4], training_times[i]))
+        print("k-fold {}: accuracy: {:.4f}, precision: {:.4f}, recall: "
+              "{:.4f}, top-3-accuracy: {:.4f}, training_time: {:.4f}".format(
+            i + 1, results[i][1], results[i][2], results[i][3], results[i][4], training_times[i]))
+
         for j in range(1, len(results[i])):
             sum_metrics[j - 1] += results[i][j]
 
     average_metrics = [sum_metric / len(results) for sum_metric in sum_metrics]
 
+    setup = "{}, {}, EP{}, B{}, W{}".format(model_name, header['dataset'], header['epochs'],
+                                            header['batch_size'], header['window_size'])
+    if model_name in ['LSTM_WV', 'FNN_WV']:
+        setup += ", {}, DIM{}".format(header['technique'], header['embedding_dim'])
+
     print('*' * 120)
     print("SUMMARY {} => average accuracy: {:.4f}, average precision: {:.4f}, average recall: {:.4f}, "
           "average top-3-accuracy: {:.4f}"
-          .format(model_name, average_metrics[0], average_metrics[1], average_metrics[2], average_metrics[3]))
+          .format(setup, average_metrics[0], average_metrics[1], average_metrics[2], average_metrics[3]))
 
 
 def save_results_to_csv(model_name, results, training_times, filename):
@@ -224,4 +268,4 @@ def save_results_to_csv(model_name, results, training_times, filename):
     df = pd.DataFrame(rows)
 
     # Save the DataFrame to a CSV file
-    df.to_csv(filename, index=False)
+    df.to_csv(filename + '.csv', index=False)
