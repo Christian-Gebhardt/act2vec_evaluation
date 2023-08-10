@@ -108,8 +108,8 @@ def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=False, 
             print('Average trace length: {:.2f}'.format(avg_trace_len))
             print('Minimum trace length: {0}'.format(min_trace_len))
             print('Maximum trace length: {0}'.format(max_trace_len))
-            print('Number of activities: {0}'.format(num_activities))
-            print('Overall number of activities: {0}'.format(num_events))
+            print('Number of (unique) activities: {0}'.format(num_activities))
+            print('Number of total events: {0}'.format(num_events))
             print('*' * 120)
 
         if summary_to_file:
@@ -121,8 +121,8 @@ def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=False, 
                 f.write('Average trace length: {:.2f}\n'.format(avg_trace_len))
                 f.write('Minimum trace length: {0}\n'.format(min_trace_len))
                 f.write('Maximum trace length: {0}\n'.format(max_trace_len))
-                f.write('Number of activities: {0}\n'.format(num_activities))
-                f.write('Overall number of activities: {0}\n'.format(num_events))
+                f.write('Number of (unique) activities: {0}\n'.format(num_activities))
+                f.write('Number of total events: {0}\n'.format(num_events))
                 f.write('*' * 120)
 
     if save_to_file:

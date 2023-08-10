@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.model_selection import RepeatedKFold
 from util.model_builder import build_model
+from scipy import stats
 
 
 def evaluate(model_names, dataset_name, model_params_list, training_params_list, data, kfold_opt=None,
@@ -269,3 +270,22 @@ def save_results_to_csv(model_name, results, training_times, filename):
 
     # Save the DataFrame to a CSV file
     df.to_csv(filename + '.csv', index=False)
+
+
+# calculate paired students t-test for hypotheses testing
+def paired_students_ttest(kfold_results1, kfold_results2, alpha):
+    num_results = min(kfold_results1, kfold_results2)
+
+    res_differences = []
+    # calculate metric differences for every fold
+    for i in range(num_results):
+        diff = kfold_results1[i] - kfold_results2[i]
+        res_differences.append(diff)
+
+    # Perform paired t-test
+    t_statistic, p_value = stats.ttest_rel(res_differences, np.zeros(len(res_differences)))
+
+    # if p_value is smaller than alpha reject h0
+    reject_null_hypothesis = True if p_value < alpha else False
+
+    return t_statistic, p_value, reject_null_hypothesis

@@ -10,7 +10,7 @@ from word_embedding_models.act2vec_sgns import act2vec_sgns
 
 if __name__ == '__main__':
 
-    dataset_name = 'helpdesk'
+    dataset_name = 'bpi_challenge_2019'
 
     traces = []
 
@@ -21,16 +21,16 @@ if __name__ == '__main__':
         traces = preprocess_dataset(dataset_name, summary_to_file=True)
 
     # define hyperparams for embeddings
-    window_sizes = [5]
+    window_sizes = [10]
     embedding_dims = [64]
     act2vec_techniques = ['SGNS']
 
     # define training params
     epoch_nums = [10]
-    batch_sizes = [64]
+    batch_sizes = [128]
 
     evaluation_data, model_params, training_params = prepare_data_and_params(
-        act2vec_techniques, traces[:200], dataset_name, embedding_dims, window_sizes,
+        act2vec_techniques, traces, dataset_name, embedding_dims, window_sizes,
         epoch_nums, batch_sizes)
 
     # define models to evaluate and their hyperparams
