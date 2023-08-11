@@ -3,6 +3,7 @@ import os
 import pm4py
 import tensorflow as tf
 import numpy as np
+from tqdm import tqdm
 
 
 def xes_to_csv(input_path, output_path=''):
@@ -18,8 +19,10 @@ def extract_traces(df):
     # extract traces from dataframe
     traces = []
 
+    # extract the traces from the data
+    print('Extracting traces...')
     # expecting the case name in 'case:concept:name' and the activity name in 'concept:name'
-    for case in df['case:concept:name'].unique():
+    for case in tqdm(df['case:concept:name'].unique()):
         trace = list(df[df['case:concept:name'] == case]['concept:name'])
         traces.append(trace)
 
@@ -38,24 +41,12 @@ def add_padding(traces, window_size):
     return traces
 
 
-def vectorize_traces(data, vocab):
-    """
-    convert the traces from string activity representations to integer representations
-    (from vocabulary) as neural network model input later
-    """
-    vect_traces = []
-
-    for trace in data:
-        vect_traces.append([vocab[w] for w in trace])
-
-    return vect_traces
-
-
 def traces_to_embedding_indices(traces, vocab):
     # convert the traces to embedding indices of the corresponding activities
     vect_traces = []
 
-    for trace in traces:
+    print('Converting traces to embedding indices...')
+    for trace in tqdm(traces):
         vect_traces.append([vocab[w] for w in trace])
 
     return vect_traces
@@ -64,7 +55,8 @@ def traces_to_embedding_indices(traces, vocab):
 def traces_to_one_hot(traces, vocab):
     # Convert the list of traces to one-hot encoded vectors
     encoded_traces = []
-    for trace in traces:
+    print('Converting traces to one-hot-encoding...')
+    for trace in tqdm(traces):
         indices = [vocab[act] for act in trace]
         trace_oh = tf.one_hot(indices, depth=len(vocab))
         encoded_traces.append(trace_oh)
@@ -76,7 +68,8 @@ def compute_sequences(vect_traces, window_length):
     # Create input-output pairs
     X = []
     y = []
-    for tv in vect_traces:
+    print('Generating sequence-target pairs from traces for next-activity-prediction...')
+    for tv in tqdm(vect_traces):
         for i in range(len(tv) - window_length):
             X.append(tv[i:i + window_length])
             y.append(tv[i + window_length])
@@ -88,24 +81,25 @@ def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=False, 
     print('Reading xes data...')
     df = xes_to_csv('data/event_logs/{0}.xes'.format(dataset_name))
 
-    # extract the traces from the data
-    print('Extracting traces...')
     traces = extract_traces(df)
 
     if print_summary or summary_to_file:
         num_events = len(df)
         num_activities = len(df["concept:name"].unique())
         num_traces = len(traces)
-        avg_trace_len = sum([len(t) for t in traces]) / num_traces
+        mean_trace_len = np.sum([len(t) for t in traces]) / num_traces
+        std_trace_len = np.std([len(t) for t in traces])
         min_trace_len = min([len(t) for t in traces])
         max_trace_len = max([len(t) for t in traces])
+
 
         if print_summary:
             print('*' * 120)
             print('Dataset Summary {0}:'.format(dataset_name))
             print('*' * 120)
             print('Number of traces: {0}'.format(num_traces))
-            print('Average trace length: {:.2f}'.format(avg_trace_len))
+            print('Mean trace length: {:.2f}'.format(mean_trace_len))
+            print('Standard deviation trace length: {0:.2f}'.format(std_trace_len))
             print('Minimum trace length: {0}'.format(min_trace_len))
             print('Maximum trace length: {0}'.format(max_trace_len))
             print('Number of (unique) activities: {0}'.format(num_activities))
@@ -118,12 +112,12 @@ def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=False, 
                 f.write('Dataset Summary {0}:\n'.format(dataset_name))
                 f.write('*' * 120 + '\n')
                 f.write('Number of traces: {0}\n'.format(num_traces))
-                f.write('Average trace length: {:.2f}\n'.format(avg_trace_len))
+                f.write('Average trace length: {:.2f}\n'.format(mean_trace_len))
+                f.write('Standard deviation trace length: {0:.2f}\n'.format(std_trace_len))
                 f.write('Minimum trace length: {0}\n'.format(min_trace_len))
                 f.write('Maximum trace length: {0}\n'.format(max_trace_len))
                 f.write('Number of (unique) activities: {0}\n'.format(num_activities))
                 f.write('Number of total events: {0}\n'.format(num_events))
-                f.write('*' * 120)
 
     if save_to_file:
         np.save('./data/preprocessed/dataset_{0}_traces.npy'.format(dataset_name), traces)
@@ -176,7 +170,7 @@ def prepare_data(padded_traces, act2vec_dict, window_sizes, dataset_name='', pri
         for window_size in window_sizes:
             # does not matter since all are the same for same window size
             X_oh, y_oh = data['OH'][window_size]['X'], data['OH'][window_size]['y']
-            print('OH, window_size {0}: X-shape: {1}, y-shape: {2}'.format(window_size, X_oh.shape, y_oh.shape))
+            print('window_size {0}: X-shape: {1}, y-shape: {2}'.format(window_size, X_oh.shape, y_oh.shape))
         print('*' * 120)
 
     if summary_to_file:

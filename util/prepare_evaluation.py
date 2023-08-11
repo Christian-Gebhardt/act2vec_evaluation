@@ -1,4 +1,4 @@
-from util.preprocessing import prepare_data, xes_to_csv, extract_traces, get_vocabulary, add_padding
+from util.preprocessing import prepare_data, get_vocabulary, add_padding
 from word_embedding_models.act2vec_cbow import act2vec_cbow
 from word_embedding_models.act2vec_random import act2vec_random
 from word_embedding_models.act2vec_sgns import act2vec_sgns

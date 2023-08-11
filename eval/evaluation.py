@@ -7,6 +7,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.model_selection import RepeatedKFold
+from tqdm import tqdm
+
 from util.model_builder import build_model
 from scipy import stats
 
@@ -19,6 +21,25 @@ def evaluate(model_names, dataset_name, model_params_list, training_params_list,
 
     # use the same k-fold split for every model for fair comparison
     kf = RepeatedKFold(**kfold_opt)
+
+    # create progress bar
+    # Calculate total number of (model, training_param) pairs
+
+    len_oh = len([model_name for model_name in model_names if 'OH' in model_name]) * len(training_params_list) \
+             * len(model_params_list['OH'])
+
+    num_techniques = len(model_params_list['WV'].keys())
+    params_lists = model_params_list['WV'].values()
+
+    len_wv = len([model_name for model_name in model_names if 'WV' in model_name]) * len(training_params_list) * \
+            num_techniques * sum(len(params_list) for params_list in params_lists)
+
+    total_pairs = len_oh + len_wv
+
+    # evaluate the models
+    print('Evaluating models...')
+    # Create a single progress bar
+    progress_bar = tqdm(total=total_pairs, desc='Progress')
 
     # loop over all selected models
     for model_name in model_names:
@@ -36,6 +57,8 @@ def evaluate(model_names, dataset_name, model_params_list, training_params_list,
                                        training_params=training_params,
                                        act2vec_technique_name=act2vec_technique, print_to_console=print_to_console,
                                        save_to_file=save_to_file)
+                        # Update the progress bar
+                        progress_bar.update(1)
             # models with OH input
             elif model_name in ['LSTM_OH', 'FNN_OH']:
                 for params in model_params_list['OH']:
@@ -44,8 +67,12 @@ def evaluate(model_names, dataset_name, model_params_list, training_params_list,
                     y_oh = data['OH'][key]['y']
                     evaluate_model(model_name, dataset_name, params, X_oh, y_oh, kf, training_params=training_params,
                                    print_to_console=print_to_console, save_to_file=save_to_file)
+                    # Update the progress bar
+                    progress_bar.update(1)
             else:
                 raise ValueError('Model name {0} not found.'.format(model_name))
+    # Close the progress bar
+    progress_bar.close()
 
 
 def evaluate_model(model_name, dataset_name, model_params, X, y, kfold, training_params=None, act2vec_technique_name='',
@@ -54,10 +81,13 @@ def evaluate_model(model_name, dataset_name, model_params, X, y, kfold, training
     results = []
     training_times = []
 
-    # Initialize a dictionary to store predictions for all k-folds
+    # initialize a dictionary to store predictions for all k-folds
     kfold_predictions = {}
 
-    # Iterate over the generated k_folds.
+    # training history
+    training_history = []
+
+    # iterate over the generated k_folds.
     for i, (train_index, test_index) in enumerate(kfold.split(X)):
         X_train, y_train = X[train_index], y[train_index]
         X_test, y_test = X[test_index], y[test_index]
@@ -75,11 +105,13 @@ def evaluate_model(model_name, dataset_name, model_params, X, y, kfold, training
         # Measuring training time
         start_time = time.time()
         # Train your model
-        model.fit(X_train, y_train, **training_params)
+        history_callback = model.fit(X_train, y_train, **training_params)
         end_time = time.time()
 
         elapsed_time = end_time - start_time
         training_times.append(elapsed_time)
+
+        training_history.append(history_callback.history)
 
         # evaluate the model on the test data
         results.append(model.evaluate(X_test, y_test, verbose=0))
@@ -124,6 +156,7 @@ def evaluate_model(model_name, dataset_name, model_params, X, y, kfold, training
     if save_to_file:
         results_dir = './output/evaluation/'
         pred_dir = './output/prediction/'
+        training_history_dir = './output/training_history/'
 
         # Create the directory if it does not exist already
         os.makedirs(results_dir, exist_ok=True)
@@ -138,8 +171,12 @@ def evaluate_model(model_name, dataset_name, model_params, X, y, kfold, training
             setup_name += "_DIM{0}".format(model_params['embedding_dim'])
 
         # save the k-fold predictions to a .npy file
-        filename_npy = os.path.join(pred_dir, setup_name) + '.npy'
-        np.save(filename_npy, kfold_predictions)
+        filename_pred = os.path.join(pred_dir, setup_name) + '_PRED.npy'
+        np.save(filename_pred, kfold_predictions)
+
+        # save the k-fold training history to a .npy file
+        filename_history = os.path.join(training_history_dir, setup_name + '_HISTORY.npy')
+        np.save(filename_history, training_history)
 
         # save the results to .csv file
         filename_csv = os.path.join(results_dir, setup_name)

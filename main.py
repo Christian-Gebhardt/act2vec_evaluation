@@ -3,14 +3,12 @@ import os
 import numpy as np
 
 from eval.evaluation import evaluate
-from util import prepare_evaluation
 from util.prepare_evaluation import prepare_data_and_params
-from util.preprocessing import prepare_data, add_padding, preprocess_dataset
-from word_embedding_models.act2vec_sgns import act2vec_sgns
+from util.preprocessing import preprocess_dataset
 
 if __name__ == '__main__':
 
-    dataset_name = 'bpi_challenge_2019'
+    dataset_name = 'helpdesk'
 
     traces = []
 
@@ -22,7 +20,7 @@ if __name__ == '__main__':
 
     # define hyperparams for embeddings
     window_sizes = [10]
-    embedding_dims = [64]
+    embedding_dims = [256]
     act2vec_techniques = ['SGNS']
 
     # define training params
@@ -30,7 +28,7 @@ if __name__ == '__main__':
     batch_sizes = [128]
 
     evaluation_data, model_params, training_params = prepare_data_and_params(
-        act2vec_techniques, traces, dataset_name, embedding_dims, window_sizes,
+        act2vec_techniques, traces[:100], dataset_name, embedding_dims, window_sizes,
         epoch_nums, batch_sizes)
 
     # define models to evaluate and their hyperparams
@@ -55,7 +53,4 @@ if __name__ == '__main__':
         print(inv_vocab[idx] + ': ', similarity)
         
     """
-
-    # evaluate the models
-    print('Evaluating models...')
-    evaluate(model_names, dataset_name, model_params, training_params, evaluation_data, save_to_file=False)
+    evaluate(model_names, dataset_name, model_params, training_params, evaluation_data, save_to_file=True)
