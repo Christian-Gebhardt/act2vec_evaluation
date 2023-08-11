@@ -6,6 +6,9 @@ from eval.evaluation import evaluate
 from util.prepare_evaluation import prepare_data_and_params
 from util.preprocessing import preprocess_dataset
 
+from tensorflow.keras.callbacks import EarlyStopping
+
+
 if __name__ == '__main__':
 
     dataset_name = 'helpdesk'
@@ -24,11 +27,24 @@ if __name__ == '__main__':
     act2vec_techniques = ['SGNS']
 
     # define training params
-    epoch_nums = [10]
+    epoch_nums = [500]
     batch_sizes = [128]
 
-    evaluation_data, model_params, training_params = prepare_data_and_params(
-        act2vec_techniques, traces[:100], dataset_name, embedding_dims, window_sizes,
+    # define the EarlyStopping callback
+    early_stopping = EarlyStopping(monitor='val_accuracy', patience=5, restore_best_weights=True)
+    validation_split = 0.2
+
+    # define manually here instead of prepare_data_and_params (due to additional params with early stopping)
+    training_params = [{
+        'epochs': epoch_nums[0],
+        'batch_size': batch_sizes[0],
+        'validation_split': validation_split,
+        'callbacks': [early_stopping],
+        'verbose': 0
+    }]
+
+    evaluation_data, model_params, _ = prepare_data_and_params(
+        act2vec_techniques, traces[:10000], dataset_name, embedding_dims, window_sizes,
         epoch_nums, batch_sizes)
 
     # define models to evaluate and their hyperparams

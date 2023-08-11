@@ -158,8 +158,10 @@ def evaluate_model(model_name, dataset_name, model_params, X, y, kfold, training
         pred_dir = './output/prediction/'
         training_history_dir = './output/training_history/'
 
-        # Create the directory if it does not exist already
+        # Create the directories if it does not exist already
         os.makedirs(results_dir, exist_ok=True)
+        os.makedirs(pred_dir, exist_ok=True)
+        os.makedirs(training_history_dir, exist_ok=True)
 
         setup_name = '{0}_{1}_{2}_EP{3}B{4}_WIN{5}'.format(
             model_name, dataset_name.upper(), formatted_time, training_params['epochs'],

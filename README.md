@@ -1,7 +1,18 @@
-# act2vec_evaluation
+# Act2vec_evaluation
 Evaluation of activity embeddings as input for neural networks (inspired by the NLP domain, see for example the famous Word2Vec package: https://code.google.com/archive/p/word2vec/). This code was implemented for my master thesis (I may append the final PDF to the repository as theoretical foundation and discussion of results).
 
-## datasets
+## Setup
+
+- First run the init script (you may need to give permissions) to setup the environment (including Tensorflow GPU support):
+```
+chmod u+x init.sh
+./init.sh
+```
+- After that you can run the main.py file (you can adjust the code in the main.p to your needs)
+```
+python3 main.py
+```
+## Datasets
 
 - BPI Challenge 2012: 10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f
 - BPI Challenge 2017: 10.4121/uuid:5f3067df-f10b-45da-b98b-86ae4c7a310b

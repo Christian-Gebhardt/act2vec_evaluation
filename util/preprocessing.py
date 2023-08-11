@@ -120,7 +120,10 @@ def preprocess_dataset(dataset_name, print_summary=True, summary_to_file=False, 
                 f.write('Number of total events: {0}\n'.format(num_events))
 
     if save_to_file:
-        np.save('./data/preprocessed/dataset_{0}_traces.npy'.format(dataset_name), traces)
+        # Create the directory if it does not exist already
+        preprocessed_dir = './data/preprocessed/'
+        os.makedirs(preprocessed_dir, exist_ok=True)
+        np.save(preprocessed_dir + 'dataset_{0}_traces.npy'.format(dataset_name), traces)
     return traces
 
 

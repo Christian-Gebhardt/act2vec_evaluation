@@ -1,0 +1,19 @@
+name: embeddings4pm_mac_m1
+channels:
+  - defaults
+  - apple
+dependencies:
+  - python=3.9.12
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - tqdm
+  - apple::tensorflow-deps
+  - pip=21.2.4
+  - pip:
+      - scikit-learn
+      - pm4py
+      - gensim
+      - tensorflow-macos
+      - tensorflow-metal

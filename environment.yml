@@ -1,0 +1,19 @@
+name: embeddings4pm
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9.12
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - tqdm
+  - cudatoolkit=11.8.0
+  - pip=23.2.1
+  - pip:
+      - nvidia-cudnn-cu11==8.6.0.163
+      - tensorflow
+      - scikit-learn
+      - pm4py
+      - gensim
