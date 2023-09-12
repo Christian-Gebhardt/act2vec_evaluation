@@ -288,8 +288,9 @@ def save_results_to_csv(model_name, results, training_times, filename):
 
         # Calculate the sum of metrics
         for j in range(0, len(results[i]) - 1):
-            sum_metrics[j] += results[i][j]
-            sum_training_time += training_times[i]
+            sum_metrics[j] += results[i][j+1]
+
+        sum_training_time += training_times[i]
 
     # Calculate the average metrics
     average_metrics = [sum_metric / len(results) for sum_metric in sum_metrics]

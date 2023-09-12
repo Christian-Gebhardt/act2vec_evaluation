@@ -13,7 +13,7 @@ dependencies:
   - pip=23.2.1
   - pip:
       - nvidia-cudnn-cu11==8.6.0.163
-      - tensorflow
+      - tensorflow==2.10
       - scikit-learn
       - pm4py
       - gensim
