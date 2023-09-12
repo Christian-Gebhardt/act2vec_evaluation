@@ -14,7 +14,7 @@ from scipy import stats
 
 
 def evaluate(model_names, dataset_name, model_params_list, training_params_list, data, kfold_opt=None,
-             print_to_console=True, save_to_file=False):
+             print_to_console=True, save_to_file=False, save_to_file_pred=False):
     # prepare k-fold cross validation (5x2 CV for McNemars Test)
     if kfold_opt is None:
         kfold_opt = {'n_splits': 2, 'n_repeats': 5, 'random_state': 729504}
@@ -32,7 +32,7 @@ def evaluate(model_names, dataset_name, model_params_list, training_params_list,
     params_lists = model_params_list['WV'].values()
 
     len_wv = len([model_name for model_name in model_names if 'WV' in model_name]) * len(training_params_list) * \
-            num_techniques * sum(len(params_list) for params_list in params_lists)
+             num_techniques * sum(len(params_list) for params_list in params_lists)
 
     total_pairs = len_oh + len_wv
 
@@ -56,7 +56,7 @@ def evaluate(model_names, dataset_name, model_params_list, training_params_list,
                         evaluate_model(model_name, dataset_name, params, X_wv, y_wv, kf,
                                        training_params=training_params,
                                        act2vec_technique_name=act2vec_technique, print_to_console=print_to_console,
-                                       save_to_file=save_to_file)
+                                       save_to_file=save_to_file, save_to_file_pred=save_to_file_pred)
                         # Update the progress bar
                         progress_bar.update(1)
             # models with OH input
@@ -77,7 +77,7 @@ def evaluate(model_names, dataset_name, model_params_list, training_params_list,
 
 def evaluate_model(model_name, dataset_name, model_params, X, y, kfold, training_params=None, act2vec_technique_name='',
                    print_to_console=True,
-                   save_to_file=False):
+                   save_to_file=False, save_to_file_pred=False):
     results = []
     training_times = []
 
@@ -116,7 +116,7 @@ def evaluate_model(model_name, dataset_name, model_params, X, y, kfold, training
         # evaluate the model on the test data
         results.append(model.evaluate(X_test, y_test, verbose=0))
 
-        if save_to_file:
+        if save_to_file_pred:
             # Predict probabilities and labels for the test data
             predicted_probabilities = model.predict(X_test, verbose=0)
             predicted_labels = np.argmax(predicted_probabilities, axis=-1)
@@ -173,8 +173,10 @@ def evaluate_model(model_name, dataset_name, model_params, X, y, kfold, training
             setup_name += "_DIM{0}".format(model_params['embedding_dim'])
 
         # save the k-fold predictions to a .npy file
-        filename_pred = os.path.join(pred_dir, setup_name) + '_PRED.npy'
-        np.save(filename_pred, kfold_predictions)
+
+        if save_to_file_pred:
+            filename_pred = os.path.join(pred_dir, setup_name) + '_PRED.npy'
+            np.save(filename_pred, kfold_predictions)
 
         # save the k-fold training history to a .npy file
         filename_history = os.path.join(training_history_dir, setup_name + '_HISTORY.npy')
@@ -288,7 +290,7 @@ def save_results_to_csv(model_name, results, training_times, filename):
 
         # Calculate the sum of metrics
         for j in range(0, len(results[i]) - 1):
-            sum_metrics[j] += results[i][j+1]
+            sum_metrics[j] += results[i][j + 1]
 
         sum_training_time += training_times[i]
 
