@@ -70,6 +70,7 @@ def compute_sequences(vect_traces, window_length):
     y = []
     print('Generating sequence-target pairs from traces for next-activity-prediction...')
     for tv in tqdm(vect_traces):
+        # add (preceding-sequence, next-activity)-pairs, by sliding a window over the trace
         for i in range(len(tv) - window_length):
             X.append(tv[i:i + window_length])
             y.append(tv[i + window_length])

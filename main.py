@@ -19,12 +19,12 @@ if __name__ == '__main__':
     if os.path.exists('./data/preprocessed/dataset_{0}_traces.npy'.format(dataset_name)):
         traces = np.load('./data/preprocessed/dataset_{0}_traces.npy'.format(dataset_name), allow_pickle=True)
     else:
-        traces = preprocess_dataset(dataset_name, summary_to_file=True)
+        traces = preprocess_dataset(dataset_name, summary_to_file=True, save_to_file=False)
 
     # define hyperparams for embeddings
     window_sizes = [10]
-    embedding_dims = [256]
-    act2vec_techniques = ['SGNS']
+    embedding_dims = [8, 32, 128, 256]
+    act2vec_techniques = ['CBOW', 'SGNS', 'RANDOM']
 
     # define training params
     epoch_nums = [500]
@@ -44,11 +44,11 @@ if __name__ == '__main__':
     }]
 
     evaluation_data, model_params, _ = prepare_data_and_params(
-        act2vec_techniques, traces[:10000], dataset_name, embedding_dims, window_sizes,
+        act2vec_techniques, traces, dataset_name, embedding_dims, window_sizes,
         epoch_nums, batch_sizes)
 
     # define models to evaluate and their hyperparams
-    model_names = ['FNN_WV', 'FNN_OH']
+    model_names = ['FNN_WV', 'LSTM_WV']
 
     """
     print('Plotting embeddings as TSNE and showing some similarities...')

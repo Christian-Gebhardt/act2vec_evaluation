@@ -1,5 +1,5 @@
 # Act2vec_evaluation
-Evaluation of activity embeddings as input for neural networks (inspired by the NLP domain, see for example the famous Word2Vec package: https://code.google.com/archive/p/word2vec/). This code was implemented for my master thesis (I may append the final PDF to the repository as theoretical foundation and discussion of results).
+Evaluation of activity embeddings as input for neural networks for Process Mining (inspired by the NLP domain, see for example the famous Word2Vec package: https://code.google.com/archive/p/word2vec/). This code was implemented for my master thesis (I may append the final PDF to the repository as theoretical foundation and discussion of results).
 
 ## Setup
 
@@ -8,7 +8,7 @@ Evaluation of activity embeddings as input for neural networks (inspired by the 
 chmod u+x init.sh
 ./init.sh
 ```
-- After that you can run the main.py file (you can adjust the code in the main.p to your needs)
+- When all necessary libraries are installed and the environment is activated, you can run the main.py file to evaluate word embedding techniques on different datasets (you can adjust the code in main.py to your needs)
 ```
 python3 main.py
 ```
