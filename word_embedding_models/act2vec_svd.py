@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.preprocessing import MinMaxScaler
 
 from util.preprocessing import build_co_occurrence_matrix, calculate_ppmi_matrix
 
@@ -22,6 +23,11 @@ def act2vec_svd(traces, embedding_dim, window_size):
     U, sigma, VT = np.linalg.svd(ppmi_matrix)
 
     # truncate SVD components into word vectors
-    act_embeddings = U[:, :embedding_dim]
+    embeddings = U[:, :embedding_dim]
 
-    return act_embeddings, vocab
+    scaler = MinMaxScaler(feature_range=(-1, 1))
+
+    # fit and transform the embeddings using MinMaxScaler to interval -1 and 1
+    normalized_embeddings = scaler.fit_transform(embeddings)
+
+    return normalized_embeddings, vocab
